@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from config import cfg
 from utils import recur
-from models.utils import physics, ssim3D
+from models.utils import physics, weighted_mse_loss, ssim3D
 
 
 def MSE(output, target):
@@ -11,8 +11,8 @@ def MSE(output, target):
     return mse
 
 
-def Physics(output):
-    phy = physics(output).item()
+def Physics(output, target):
+    phy = physics(output, target).item()
     return phy
 
 
@@ -42,7 +42,7 @@ class Metric(object):
         self.metric = {'Loss': lambda input, output: output['loss'].item(),
                        'MSE': lambda input, output: recur(MSE, output['uvw'], input['uvw']),
                        'D_MSE': lambda input, output: recur(MSE, output['duvw'], input['duvw']),
-                       'Physics': lambda input, output: recur(Physics, output['duvw']),
+                       'Physics': lambda input, output: recur(Physics, output['duvw'], input['duvw']),
                        'PSNR': lambda input, output: recur(PSNR, output['uvw'], input['uvw']),
                        'MAE': lambda input, output: recur(MAE, output['uvw'], input['uvw']),
                        'MSSIM': lambda input, output: recur(MSSIM, output['uvw'], input['uvw'])}

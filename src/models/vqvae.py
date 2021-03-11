@@ -153,8 +153,8 @@ class VQVAE(nn.Module):
             if cfg['loss_commit'][i] > 0:
                 if cfg['loss_mode'][i] == 'exact':
                     output['loss'] += cfg['loss_commit'][i] * weighted_mse_loss(output['duvw'], input['duvw'])
-                elif cfg['loss_mode'][i] == 'physics':
-                    output['loss'] += cfg['loss_commit'][i] * physics(output['duvw'])
+                elif cfg['loss_mode'][i] == 'physics' and (cfg['loss_mode'][i])>0.0:
+                    output['loss'] += cfg['loss_commit'][i] * physics(output['duvw'], input['duvw'])
                 else:
                     raise ValueError('Not valid loss mode')
         return output

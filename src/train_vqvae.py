@@ -25,7 +25,7 @@ if args['control_name']:
     cfg['control'] = {k: v for k, v in zip(cfg['control'].keys(), args['control_name'].split('_'))} \
         if args['control_name'] != 'None' else {}
 cfg['control_name'] = '_'.join(
-    [cfg['control'][k] for k in cfg['control'] if cfg['control'][k]]) if 'control' in cfg else ''
+    [cfg['control'][k] for k in cfg['control'] if k!= 'seq_length']) if 'control' in cfg else ''
 
 
 def main():
@@ -34,6 +34,7 @@ def main():
     for i in range(cfg['num_experiments']):
         model_tag_list = [str(seeds[i]), cfg['data_name'], cfg['model_name'], cfg['control_name']]
         cfg['model_tag'] = '_'.join([x for x in model_tag_list if x])
+        #print("cfg['control_name'] = ", cfg['control_name'])
         print('Experiment: {}'.format(cfg['model_tag']))
         runExperiment()
     return
