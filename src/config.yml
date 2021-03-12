@@ -8,7 +8,7 @@ control:
 # data
 data_name: Turb
 # model
-model_name: vqvae
+model_name: convlstm
 # experiment
 num_workers: 0
 init_seed: 0
