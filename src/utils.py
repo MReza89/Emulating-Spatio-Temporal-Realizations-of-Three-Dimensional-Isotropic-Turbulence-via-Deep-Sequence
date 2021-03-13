@@ -679,7 +679,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
         
         
         for i, name in zip(range(3), ['_NoFilter', '_InertialScales', '_LargeScales']):
-            metric = Metric()
+            metric = Metric({'test': ['MSE', 'PSNR', 'MAE', 'MSSIM']})
             input_uvw_dic = {}
             output_uvw_dic = {}
             input_uvw_dic['uvw'] = torch.from_numpy(np.stack([Original_Filtered_Field['U' + name][0], \
@@ -688,7 +688,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
             output_uvw_dic['uvw'] = torch.from_numpy(np.stack([Reconstructed_Filtered_Field['U' + name][0],\
                                           Reconstructed_Filtered_Field['V' + name][0], \
                                           Reconstructed_Filtered_Field['W' + name][0]] , axis = 0)).unsqueeze(0)            
-            evaluation = metric.evaluate(['MSE', 'PSNR', 'MAE', 'MSSIM'], input_uvw_dic, output_uvw_dic)
+            evaluation = metric.evaluate(metric.metric_name['test'], input_uvw_dic, output_uvw_dic)
             title = 'model_evaluation' + name
             x_st = 0.1
             y_st = 1.75
