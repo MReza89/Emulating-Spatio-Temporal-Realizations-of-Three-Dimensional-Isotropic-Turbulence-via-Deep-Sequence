@@ -304,7 +304,7 @@ def Compute_2D_PDF(Signal_X, Signal_Y, binwidth=12):
     return X_M, Y_M, H
 
 
-def Compute_V_Statistics(u, v, w, Ng=128):
+def Compute_V_Statistics(u, v, w, Ng):
     """
     input: three components of velocity field
     
@@ -392,11 +392,14 @@ def Compute_VG_Statistics(List_VG):
     return Dict_VG_Stat_Outputs
 
 
-def K2_modified(Ng=128):
+def K2_modified(Ng):
     kk = np.fft.fftfreq(Ng, 1. / Ng).astype(int)
     K = np.array(np.meshgrid(kk, kk, kk, indexing='ij'), dtype=int)
     K2 = np.sum(K * K, 0, dtype=int)
     return np.where(K2 == 0, 1, K2).astype(float)
+
+
+
 
 
 def filtering_Gaussian(Phy_Sig, factor_I_L=[1e-16, 1 / 4, 1 / 2][0], \
@@ -477,33 +480,46 @@ def Filtered_VG(List_VG):
 
 def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, num_bins=1500):
     
+    from matplotlib.pyplot import contour, contourf
+    from matplotlib import rc
+    import scipy.stats as stats
+
     Plt_uvw = True
-    Plt_vg = True
     Plt_EnergySpectrum = True
-    Plt_UVW_Summary = True
     Plt_RQ_filter = True
-    Plt_VG_filter_SummaryStatistics = True
-    Plt_VG_filter_PDF_all = True
+    Plt_VG_filter_SummaryStatistics = True    
     Plt_VG_filter_PDF_LongTransverse = True
     U_V_W_Evaluation_summary = True
     
+    Plt_UVW_Summary = False   
+    Plt_vg = False
+    Plt_VG_filter_PDF_all = False
+        
+    x_y_lable_fontsize=20
+    x_y_ticks_lable_fontsize=16
+    legend_fontsize = 20
+    line_width = 2.5
+    extent_x =[-5,5]
+    extent_y =[-5,0]
+    plt.rc('text', usetex=False)
+    rc('font', family='serif')
+    O_color = 'blue'
+    R_color = 'red'
+        
     num_bins_VG_PDF = 100
-    num_bins_UVW_PDF = 200
+    num_bins_UVW_PDF = 100
     num_bins_RQ_PDF = 12
+    num_bins_RQ_PDF_arr = [12,12,6]
     lev = np.array([1e-1 * 0.001, 1e-2 * 0.001, 1e-3 * 0.001, 1e-4 * 0.001])[::-1]
     extend = 10
     O_color = 'blue'
     R_color = 'red'
     camp = 'viridis'  # 'hot'
-    
-    
-    from matplotlib.pyplot import contour, contourf
-    import scipy.stats as stats
-
+        
     input_uvw = input['uvw'].cpu().numpy()
     input_duvw = input['duvw'].cpu().numpy()
     output_uvw = output['uvw'].cpu().numpy()
-    output_duvw = output['duvw'].cpu().numpy()
+    output_duvw = output['duvw'].cpu().numpy()    
     
     if model_evaluation:  
         title = 'model_evaluation'
@@ -527,44 +543,53 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
         fig.savefig('{}/Model_Evluation_{}.{}'.format(path, cfg['model_tag'], cfg['fig_format']), dpi=300,
                         bbox_inches='tight', fontsize=fontsize)
         plt.close()
-
-    
+        
     
     if Plt_uvw:
-        j_d_min, j_d_max = 0, 128
-        k_d_min, k_d_max = 0, 128
-        label = ['U', 'V', 'W']
-        fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(10, 10))
+        j_d_min, j_d_max = 0, input_uvw.shape[-1]
+        k_d_min, k_d_max = 0, input_uvw.shape[-1]
+        label = ['$u$', '$v$', '$w$']
+        fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(14, 12))
         xx = np.linspace(-5, 5, 1000)
         yy = np.log10(stats.norm.pdf(xx, 0, 1))
         for i in range(3):
-            plt.colorbar(ax[i][0].imshow(input_uvw[0, i, i_d_min:(i_d_min + 1), j_d_min:j_d_max,
+            cb=plt.colorbar(ax[i][0].imshow(input_uvw[0, i, i_d_min:(i_d_min + 1), j_d_min:j_d_max,
                                          k_d_min:k_d_max].squeeze()), ax=ax[i][0], fraction=0.046, pad=0.04)
-            plt.colorbar(ax[i][1].imshow(output_uvw[0, i, i_d_min:(i_d_min + 1), j_d_min:j_d_max,
+            cb.ax.tick_params(labelsize=x_y_ticks_lable_fontsize)
+            cb=plt.colorbar(ax[i][1].imshow(output_uvw[0, i, i_d_min:(i_d_min + 1), j_d_min:j_d_max,
                                          k_d_min:k_d_max].squeeze()), ax=ax[i][1], fraction=0.046, pad=0.04)
-            ax[i][0].set_title('Original {}'.format(label[i]), fontsize=fontsize)
-            ax[i][1].set_title('Reconstructed {}'.format(label[i]), fontsize=fontsize)
+            cb.ax.tick_params(labelsize=x_y_ticks_lable_fontsize)
+            ax[i][0].set_title('Original {}'.format(label[i]), fontsize=x_y_lable_fontsize)
+            ax[i][1].set_title('Reconstructed {}'.format(label[i]), fontsize=x_y_lable_fontsize)
+            ax[i][0].get_xaxis().set_visible(False)
+            ax[i][0].get_yaxis().set_visible(False)
+            ax[i][1].get_xaxis().set_visible(False)
+            ax[i][1].get_yaxis().set_visible(False)
+            
             x, y = Compute_1D_PDF(input_uvw[0, i, :, :, :], num_bins=num_bins_UVW_PDF)
 
-            ax[i][2].plot(x, y, 'b', lw=2, label='Original {}'.format(label[i]))
+            ax[i][2].plot(x, y, color= O_color, linestyle='-' , lw=line_width, label='Original'.format(label[i]))
             x, y = Compute_1D_PDF(output_uvw[0, i, :, :, :], num_bins=num_bins_UVW_PDF)
 
-            ax[i][2].plot(x, y, 'g', lw=2, label='Reconstructed {}'.format(label[i]))
-            ax[i][2].set_xlim(-10, 10)
-            ax[i][2].set_ylim(-5, 0)
-            ax[i][2].set_xlabel('Normalized {}'.format(label[i]), fontsize=fontsize)
-            ax[i][2].set_ylabel('log10(pdf)', fontsize=fontsize)
+            ax[i][2].plot(x, y, color= R_color, linestyle='--', lw=line_width, label='Reconstructed'.format(label[i]))
+            ax[i][2].set_xlim(extent_x[0], extent_x[1])
+            ax[i][2].set_ylim(extent_y[0], extent_y[1])
+            ax[i][2].tick_params(axis='both', labelsize=x_y_ticks_lable_fontsize)
+            ax[i][2].set_xlabel('Normalized {}'.format(label[i]), fontsize=x_y_lable_fontsize)
+            ax[i][2].set_ylabel(r'$log10$ PDF', fontsize=x_y_lable_fontsize)
             ax[i][2].set_title('MSE = {:.4f}'.format(np.mean((output_uvw[:, i, :, :, :] - input_uvw[:, i, :, :, :]) ** 2)),
-                               fontsize=fontsize)
-            ax[i][2].grid(True)
+                               fontsize=x_y_lable_fontsize)
+            #ax[i][2].grid(True)
 
-            ax[i][2].plot(xx, yy, 'r--', label="Gaussian")
-            ax[i][2].legend(fontsize=fontsize)
+            ax[i][2].plot(xx, yy, linestyle=':', lw=1.5, color = 'k', label=None)
+            if i==2:
+                ax[i][2].legend(fontsize=legend_fontsize,frameon=False)            
         plt.tight_layout()
         makedir_exist_ok(path)
         fig.savefig('{}/uvw_{}.{}'.format(path, cfg['model_tag'], cfg['fig_format']), dpi=300, bbox_inches='tight',
                     fontsize=fontsize)
         plt.close()
+        np.save(path+'/output_uvw.npy',output_uvw)
     
     if Plt_vg:
         label = [['dUdx', 'dUdy', 'dUdz'], ['dVdx', 'dVdy', 'dVdz'], ['dWdx', 'dWdy', 'dWdz']]
@@ -603,25 +628,24 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
                                                   output_uvw[0, 2, :, :, :], Ng = input_uvw.shape[-1])
     if Plt_EnergySpectrum:
         # Plot Energy Spectrum
-        O_color = 'blue'
-        R_color = 'red'
+        
         title = ['Original', 'Reconstructed']
         fontsize_text = 18
-        fig = plt.figure(figsize=(8, 6))
+        fig = plt.figure(figsize=(6, 4))
         fontsize_label = 20
         xx = np.arange(Ng)
-        plt.plot(xx, Energy_k_Original, color=O_color, label=title[0])
-        plt.plot(xx, Energy_k_Reconstructed, color=R_color, linestyle='--', label=title[1])
-        plt.plot(xx[1:], (xx[1:] ** (-5 / 3)), color='k', label='$K^{(-5/3)}$')
-        plt.legend(fontsize=fontsize_text)
+        plt.plot(xx, Energy_k_Original, color=O_color, linestyle='-', lw=line_width, label=title[0])
+        plt.plot(xx, Energy_k_Reconstructed, color=R_color, linestyle='--', lw=line_width, label=title[1])
+        plt.plot(xx[1:], (xx[1:] ** (-5 / 3)), color='k', linestyle=':', label='$K^{-5/3}$')
+        plt.legend(fontsize=legend_fontsize,frameon=False) 
         plt.yscale('log')
         plt.xscale('log')
         plt.ylim([1e-6, 10])
-        plt.xlabel(r"$k$", fontsize=fontsize_label)
-        plt.ylabel(r"$E(k)$", fontsize=fontsize_label)
-        plt.xticks(fontsize=fontsize_label)
-        plt.yticks(fontsize=fontsize_label)
-        plt.grid()
+        plt.xlabel(r"$k$", fontsize=x_y_lable_fontsize)
+        plt.ylabel(r"$E(k)$", fontsize=x_y_lable_fontsize)
+        plt.xticks(fontsize=x_y_ticks_lable_fontsize)
+        plt.yticks(fontsize=x_y_ticks_lable_fontsize)
+        #plt.grid()
 
         plt.tight_layout()
         makedir_exist_ok(path)
@@ -655,7 +679,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
         
         
         for i, name in zip(range(3), ['_NoFilter', '_InertialScales', '_LargeScales']):
-            metric = Metric({'test': ['MSE', 'PSNR', 'MAE', 'MSSIM']})
+            metric = Metric()
             input_uvw_dic = {}
             output_uvw_dic = {}
             input_uvw_dic['uvw'] = torch.from_numpy(np.stack([Original_Filtered_Field['U' + name][0], \
@@ -664,7 +688,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
             output_uvw_dic['uvw'] = torch.from_numpy(np.stack([Reconstructed_Filtered_Field['U' + name][0],\
                                           Reconstructed_Filtered_Field['V' + name][0], \
                                           Reconstructed_Filtered_Field['W' + name][0]] , axis = 0)).unsqueeze(0)            
-            evaluation = metric.evaluate(metric.metric_name['test'], input_uvw_dic, output_uvw_dic)
+            evaluation = metric.evaluate(['MSE', 'PSNR', 'MAE', 'MSSIM'], input_uvw_dic, output_uvw_dic)
             title = 'model_evaluation' + name
             x_st = 0.1
             y_st = 1.75
@@ -689,8 +713,8 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
             
     if Plt_UVW_Summary:
         ## Plot U,V,W filtered
-        j_d_min, j_d_max = 0, 128
-        k_d_min, k_d_max = 0, 128
+        j_d_min, j_d_max = 0, input_uvw.shape[-1]
+        k_d_min, k_d_max = 0, input_uvw.shape[-1]
         i_d_min = np.random.randint(0, Ng)  # let's keep it random and not stick to a specific cross-section
         xx = np.linspace(-5, 5, 1000)
         yy = np.log10(stats.norm.pdf(xx, 0, 1))
@@ -751,38 +775,42 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
 
     ###
     if Plt_RQ_filter:
-        for Scale in ['_NoFilter', '_InertialScales', '_LargeScales']:
-            fig = plt.figure(figsize=(12, 8))
-            X_M, Y_M, H = Compute_2D_PDF(Original_Filtered_VG_Field['R' + Scale], Original_Filtered_VG_Field['Q' + Scale], num_bins_RQ_PDF)
+        fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(15,4))
+        labels_RQ = [' No Filter', ' Inertial Scales', ' Large Scales']
+        if Ng!=128: 
+            num_bins_RQ_PDF_arr = [6,4,2]
+        for i,Scale in enumerate(['_NoFilter', '_InertialScales', '_LargeScales']):
+            
+            X_M, Y_M, H = Compute_2D_PDF(Original_Filtered_VG_Field['R' + Scale], Original_Filtered_VG_Field['Q' + Scale], num_bins_RQ_PDF_arr[i])
             SijSij_mean_t = np.mean(Original_Filtered_VG_Field['S_ijS_ij' + Scale])
 
-            contours = contour(X_M / SijSij_mean_t ** (3 / 2), Y_M / SijSij_mean_t, H, levels=lev, \
-                               origin='lower', colors=4 * (O_color,), linewidths=1, linestyles='solid')
+            ax[i].contour(X_M / SijSij_mean_t ** (3 / 2), Y_M / SijSij_mean_t, H, levels=lev, \
+                               origin='lower', colors=4 * (O_color,), linewidths=line_width, linestyles='solid')
 
             X_M, Y_M, H = Compute_2D_PDF(Reconstructed_Filtered_VG_Field['R' + Scale],
-                                         Reconstructed_Filtered_VG_Field['Q' + Scale], num_bins_RQ_PDF)
+                                         Reconstructed_Filtered_VG_Field['Q' + Scale], num_bins_RQ_PDF_arr[i])
             SijSij_mean_t = np.mean(Reconstructed_Filtered_VG_Field['S_ijS_ij' + Scale])
 
-            contours = contour(X_M / SijSij_mean_t ** (3 / 2), Y_M / SijSij_mean_t, H, levels=lev, \
-                               origin='lower', colors=4 * (R_color,), linewidths=3, linestyles='--')
+            ax[i].contour(X_M / SijSij_mean_t ** (3 / 2), Y_M / SijSij_mean_t, H, levels=lev, \
+                               origin='lower', colors=4 * (R_color,), linewidths=line_width, linestyles='--')
 
             Rx = np.arange(-10, 10, 0.1)
-            plt.plot(Rx, -((27 / 4) * Rx ** 2) ** (1 / 3), 'k-', label='$Q=-(27R^2/4)^{1/3}$')
-            plt.legend(fontsize=15)
+            ax[i].plot(Rx, -((27 / 4) * Rx ** 2) ** (1 / 3), linestyle=':',lw=1.5, color = 'k', label='$Q=-(27R^2/4)^{1/3}$')
+            if i==0: ax[i].legend(fontsize=legend_fontsize,frameon=False)
 
-            plt.xlabel(r"$R/(S_{ij}S_{ij})^{(3/2)}}$", fontsize=fontsize_label)
-            plt.ylabel(r"$Q/S_{ij}S_{ij}$", fontsize=fontsize_label)
-            plt.xlim([-extend, extend])
-            plt.ylim([-extend, extend])
-            plt.grid()
-            plt.title("R-Q" + Scale)
-            plt.tight_layout()
-            makedir_exist_ok(path)
-            fig.savefig('{}/RQ{}_{}.{}'.format(path, Scale, cfg['model_tag'], cfg['fig_format']), dpi=300,
-                        bbox_inches='tight',
-                        fontsize=fontsize)
+            ax[i].set_xlabel(r"$R/\langle S_{ij}S_{ij} \rangle^{3/2}}$", fontsize=x_y_lable_fontsize)
+            ax[i].set_ylabel(r"$Q/\langle S_{ij}S_{ij} \rangle $", fontsize=x_y_lable_fontsize)
+            ax[i].set_xlim([-extend//2, extend//2]) if Ng==128 else ax[i].set_xlim([-1*extend, 1*extend])
+            ax[i].set_ylim([-extend, extend]) #if Ng==128 else ax[i].set_ylim([-2*extend, 2*extend])
+            ax[i].set_title("R-Q" + labels_RQ[i], fontsize=x_y_lable_fontsize)
 
-            plt.close()
+        plt.tight_layout()
+        makedir_exist_ok(path)
+        fig.savefig('{}/RQ{}_{}.{}'.format(path, 'All', cfg['model_tag'], cfg['fig_format']), dpi=300,
+                    bbox_inches='tight',
+                    fontsize=fontsize)
+        plt.close()
+        
     
     if Plt_VG_filter_SummaryStatistics:
         #### Plot other Filtered VG statistics
@@ -856,10 +884,12 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
                         fontsize=fontsize)
             plt.close()
     if Plt_VG_filter_PDF_LongTransverse:
+        xx = np.linspace(-5, 5, 1000)
+        yy = np.log10(stats.norm.pdf(xx, 0, 1))
         label_plot = ['$A_{ii}$','$A_{ij}$']
         for Scale in ['_NoFilter', '_InertialScales', '_LargeScales']:
             fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(14, 6))
-            fontsize = 15
+            
             
             Original_Longitudinal = np.stack([Original_Filtered_VG_Field[label[0][0] + '_Phy' + Scale][0],\
                                               Original_Filtered_VG_Field[label[1][1] + '_Phy' + Scale][0],\
@@ -883,40 +913,40 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
             
                         
             x, y = Compute_1D_PDF(Original_Longitudinal, num_bins=num_bins_VG_PDF)
-            ax[0].plot(x, y, 'g', lw=2, label='Original {}'.format(label_plot[0]))
+            ax[0].plot(x, y, color= O_color, linestyle='-', lw=line_width, label='Original'.format(label_plot[0]))
             
             x, y = Compute_1D_PDF(Reconstructed_Longitudinal, num_bins=num_bins_VG_PDF)
-            ax[0].plot(x, y, 'b', lw=2, label='Reconstructed {}'.format(label_plot[0]))
+            ax[0].plot(x, y, color= R_color, linestyle='--', lw=line_width, label='Reconstructed'.format(label_plot[0]))
             
-            ax[0].set_title('{}{} MSE = {:.4f}'.format(label_plot[0], Scale,\
-                                                          np.mean(( Original_Longitudinal - Reconstructed_Longitudinal) ** 2))\
-                               , fontsize=fontsize)
+            ax[0].set_title(' MSE = {:.4f}'.format(np.mean(( Original_Longitudinal - Reconstructed_Longitudinal) ** 2))\
+                               , fontsize=x_y_lable_fontsize)
             ax[0].set_xlim(-10, 10)
             ax[0].set_ylim(-5, 0)
-            ax[0].set_xlabel('Normalized {}'.format(label_plot[0]), fontsize=fontsize)
-            ax[0].set_ylabel('log10(PDF)', fontsize=fontsize)
-            ax[0].grid(True)
+            ax[0].tick_params(axis='both', labelsize=x_y_ticks_lable_fontsize)
+            ax[0].set_xlabel('Normalized {}'.format(label_plot[0]), fontsize=x_y_lable_fontsize)
+            ax[0].set_ylabel(r'$log10$ PDF', fontsize=x_y_lable_fontsize)
+            #ax[0].grid(True)
 
-            ax[0].plot(xx, yy, 'r--', label="Gaussian")
-            ax[0].legend([ ["Original "+label_plot[0]], ["Reconstructed "+label_plot[0]],"Gaussian"], fontsize=fontsize)                        
+            ax[0].plot(xx, yy, linestyle=':', lw=1.5, color = 'k', label=None)
+            ax[0].legend([ "Original", "Reconstructed"], fontsize=legend_fontsize, frameon=False, loc= 'upper left')                        
             
             x, y = Compute_1D_PDF(Original_Transverse, num_bins=num_bins_VG_PDF)
-            ax[1].plot(x, y, 'g', lw=2, label='Original {}'.format(label_plot[1]))
+            ax[1].plot(x, y, color= O_color, linestyle='-', lw=line_width, label='Original'.format(label_plot[1]))
             
             x, y = Compute_1D_PDF(Reconstructed_Transverse, num_bins=num_bins_VG_PDF)
-            ax[1].plot(x, y, 'b', lw=2, label='Reconstructed {}'.format(label_plot[1]))
+            ax[1].plot(x, y, color= R_color, linestyle='--', lw=line_width, label='Reconstructed'.format(label_plot[1]))
             
-            ax[1].set_title('{}{} MSE = {:.4f}'.format(label_plot[1], Scale,\
-                                                          np.mean(( Original_Transverse - Reconstructed_Transverse) ** 2))\
-                               , fontsize=fontsize)
+            ax[1].set_title('MSE = {:.4f}'.format(np.mean(( Original_Transverse - Reconstructed_Transverse) ** 2))\
+                               , fontsize=x_y_lable_fontsize)
             ax[1].set_xlim(-10, 10)
             ax[1].set_ylim(-5, 0)
-            ax[1].set_xlabel('Normalized {}'.format(label_plot[1]), fontsize=fontsize)
-            ax[1].set_ylabel('log10(PDF)', fontsize=fontsize)
-            ax[1].grid(True)
+            ax[1].tick_params(axis='both', labelsize=x_y_ticks_lable_fontsize)
+            ax[1].set_xlabel('Normalized {}'.format(label_plot[1]), fontsize=x_y_lable_fontsize)
+            ax[1].set_ylabel(r'$log10$ PDF', fontsize=x_y_lable_fontsize)
+            #ax[1].grid(True)
 
-            ax[1].plot(xx, yy, 'r--', label="Gaussian")
-            ax[1].legend([ ["Original "+label_plot[1]], ["Reconstructed "+label_plot[1]],"Gaussian"], fontsize=fontsize)
+            ax[1].plot(xx, yy, linestyle=':', lw=1.5, color = 'k', label=None)
+            #ax[1].legend([ "Original", "Reconstructed "], fontsize=legend_fontsize, frameon=False)  
             
             
             

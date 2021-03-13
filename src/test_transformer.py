@@ -88,7 +88,10 @@ def test(uvw_dataset, code_dataset, ae, model, metric, logger, epoch):
         info = {'info': ['Model: {}'.format(cfg['model_tag']), 'Test Epoch: {}({:.0f}%)'.format(epoch, 100.)]}
         logger.append(info, 'test', mean=False)
         print(logger.write('test', metric.metric_name['test']))
-        vis(input, output, './output/vis')
+        for j in range(output['uvw'].size(0)):
+            vis_input = {'uvw': input['uvw'][j].unsqueeze(0), 'duvw': input['duvw'][j].unsqueeze(0)}
+            vis_output = {'uvw': output['uvw'][j].unsqueeze(0), 'duvw': output['duvw'][j].unsqueeze(0)}
+            vis(vis_input, vis_output, './output/vis_'+cfg['model_tag'] + '/p_{}'.format(j) )
     return
 
 
