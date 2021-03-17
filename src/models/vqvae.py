@@ -76,7 +76,12 @@ class Decoder(nn.Module):
         super().__init__()
         blocks = [nn.Conv3d(input_size, hidden_size, 3, 1, 1)]
         for i in range(num_res_block):
-            blocks.append(ResBlock(hidden_size, res_size))
+            blocks.append(ResBlock(hidden_size, res_size))        
+        blocks.extend([
+                    nn.BatchNorm3d(hidden_size),
+                    nn.ReLU(inplace=True),
+                    nn.Conv3d(hidden_size, hidden_size, 3, 1, 1)
+            ])
         if depth == 3:
             blocks.extend([
                 nn.BatchNorm3d(hidden_size),

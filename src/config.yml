@@ -2,14 +2,14 @@
 # control
 control:
   depth: '3'
-  code_hidden_size : 'chs-3'
+  code_hidden_size : 'chs-1'
   loss_mode: 'exact-physics'
   loss_commit: '0.1-0.0'
   seq_length: '2-2'
 # data
 data_name: Turb
 # model
-model_name: transformer
+model_name: vqvae
 # experiment
 num_workers: 0
 init_seed: 0
