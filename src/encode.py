@@ -59,6 +59,7 @@ def encode(data_loader, model):
             input = to_device(input, cfg['device'])
             _, _, code_i = model.encode(input['uvw'])
             code.append(code_i.cpu())
+            if i==0: print("code_i.size() = " , code_i.size())
         code = torch.cat(code, dim=0)
     return code
 

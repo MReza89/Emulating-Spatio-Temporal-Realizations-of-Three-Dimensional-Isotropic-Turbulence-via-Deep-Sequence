@@ -111,30 +111,39 @@ class Decoder(nn.Module):
 
 
 class VQVAE(nn.Module):
-    def __init__(self, depth, hidden_size, embedding_size, num_embedding, num_res_block, res_size, vq_commit):
+    def __init__(self, input_size, depth, hidden_size, embedding_size, num_embedding, num_res_block, res_size, vq_commit):
         super().__init__()
-        self.encoder = Encoder(1, hidden_size, embedding_size, num_res_block, res_size, depth)
+        self.encoder = Encoder(input_size, hidden_size, embedding_size, num_res_block, res_size, depth)
         self.quantizer = VectorQuantization(embedding_size, num_embedding, vq_commit)
-        self.decoder = Decoder(embedding_size, hidden_size, 1, num_res_block, res_size, depth)
+        self.decoder = Decoder(embedding_size, hidden_size, input_size, num_res_block, res_size, depth)
+        self.hidden_size_code = 3 if input_size==1 else 1 #[3,1][0]
 
     def encode(self, input):
-        x = input.view(input.size(0) * input.size(1), -1, *input.size()[2:])
+        if self.hidden_size_code == 3:
+            x = input.view(input.size(0) * input.size(1), -1, *input.size()[2:])
+        else:
+            x = input
         encoded = self.encoder(x)
         quantized, diff, code = self.quantizer(encoded)
-        quantized = quantized.view(input.size(0), input.size(1), *quantized.size()[1:])
-        code = code.view(input.size(0), input.size(1), *code.size()[1:])
+        if self.hidden_size_code == 3:
+            quantized = quantized.view(input.size(0), input.size(1), *quantized.size()[1:])
+            code = code.view(input.size(0), input.size(1), *code.size()[1:])
+        else:
+            quantized = quantized.view(input.size(0), 1, *quantized.size()[1:])
+            code = code.view(input.size(0), 1, *code.size()[1:])
         return quantized, diff, code
 
     def decode(self, quantized):
-        x = quantized.view(quantized.size(0) * quantized.size(1), *quantized.size()[2:])
-        decoded = self.decoder(x)
-        decoded = decoded.view(quantized.size(0), quantized.size(1), *decoded.size()[2:])
+        x = quantized.view(quantized.size(0) * quantized.size(1), *quantized.size()[2:])        
+        decoded = self.decoder(x)        
+        if self.hidden_size_code == 3:
+            decoded = decoded.view(quantized.size(0), quantized.size(1), *decoded.size()[2:])        
         return decoded
 
     def decode_code(self, code):
         x = code.view(code.size(0) * code.size(1), *code.size()[2:])
-        quantized = self.quantizer.embedding_code(x)
-        quantized = quantized.view(code.size(0), code.size(1), *quantized.size()[1:])
+        quantized = self.quantizer.embedding_code(x)        
+        quantized = quantized.view(code.size(0), code.size(1), *quantized.size()[1:])        
         decoded = self.decode(quantized)
         return decoded
 
@@ -161,6 +170,7 @@ class VQVAE(nn.Module):
 
 
 def vqvae():
+    input_size = 1 if cfg['code_hidden_size']==3 else 3
     depth = cfg['vqvae']['depth']
     hidden_size = cfg['vqvae']['hidden_size']
     embedding_size = cfg['vqvae']['embedding_size']
@@ -168,6 +178,6 @@ def vqvae():
     num_res_block = cfg['vqvae']['num_res_block']
     res_size = cfg['vqvae']['res_size']
     vq_commit = cfg['vqvae']['vq_commit']
-    model = VQVAE(depth, hidden_size, embedding_size, num_embedding, num_res_block, res_size, vq_commit)
+    model = VQVAE(input_size, depth, hidden_size, embedding_size, num_embedding, num_res_block, res_size, vq_commit)
     model.apply(init_param)
     return model

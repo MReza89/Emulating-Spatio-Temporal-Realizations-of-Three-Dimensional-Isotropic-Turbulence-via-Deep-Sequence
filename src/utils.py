@@ -108,6 +108,7 @@ def process_control():
     data_shape = {'Turb': [3, 128, 128, 128]}
     cfg['data_shape'] = data_shape[cfg['data_name']]
     cfg['loss_mode'] = [str(x) for x in cfg['control']['loss_mode'].split('-')]
+    cfg['code_hidden_size'] = int(cfg['control']['code_hidden_size'].split('-')[-1])
     cfg['loss_commit'] = [float(x) for x in cfg['control']['loss_commit'].split('-')]
     cfg['seq_length'] = [int(x) for x in cfg['control']['seq_length'].split('-')] if 'seq_length' in cfg[
         'control'] else None
