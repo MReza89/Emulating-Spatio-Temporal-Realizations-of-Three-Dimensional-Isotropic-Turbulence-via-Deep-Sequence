@@ -1,15 +1,15 @@
 ---
 # control
 control:
-  depth: '3'
+  depth: '1'
   code_hidden_size : 'chs-1'
   loss_mode: 'exact-physics'
   loss_commit: '0.1-0.0'
-  seq_length: '2-2'
+  seq_length: '3-3'
 # data
 data_name: Turb
 # model
-model_name: vqvae
+model_name: convlstm
 # experiment
 num_workers: 0
 init_seed: 0
