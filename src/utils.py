@@ -114,8 +114,8 @@ def process_control():
         'control'] else None
     cfg['vqvae'] = {'depth': int(cfg['control']['depth']), 'hidden_size': 128, 'embedding_size': 64,
                     'num_embedding': 512, 'num_res_block': 2, 'res_size': 32, 'vq_commit': 0.25}
-    cfg['transformer'] = {'embedding_size': 64, 'hidden_size': 128, 'num_heads': 2, 'dropout': 0.2, 'num_layers': 3}
-    cfg['convlstm'] = {'hidden_size': 64, 'num_layers': 3}
+    cfg['transformer'] = {'embedding_size': 64, 'hidden_size': 128, 'num_heads': 2, 'dropout': 0.2, 'num_layers': 2}
+    cfg['convlstm'] = {'hidden_size': 64, 'num_layers': 2}
     for model_name in ['vqvae', 'transformer', 'convlstm']:
         cfg[model_name]['shuffle'] = {'train': True, 'test': False}
         if model_name in ['vqvae']:

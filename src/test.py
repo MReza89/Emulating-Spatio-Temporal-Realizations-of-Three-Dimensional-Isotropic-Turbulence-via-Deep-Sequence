@@ -210,3 +210,30 @@ from logger import Logger
 #     print(F.l1_loss(b[...,1], torch.tensor(d.imag), reduction='mean'))
 #     print(torch.allclose(c.imag, torch.tensor(d.imag)))
 #     print(F.l1_loss(c.imag, torch.tensor(d.imag), reduction='mean'))
+
+# if __name__ == '__main__':
+#     import torch.fft
+#     import numpy as np
+#     x = torch.randn(1, 1, 3, 3, 3)
+#     N, C, H, W, D = x.size()
+#     h = np.fft.fftfreq(H, 1. / H)
+#     w = np.fft.fftfreq(W, 1. / W)
+#     d = np.fft.fftfreq(D, 1. / D)
+#     mesh_h, mesh_w, mesh_d = torch.tensor(np.meshgrid(h, w, d, indexing='ij'), device=x.device, dtype=x.dtype)
+#     V_fft = torch.rfft(x, signal_ndim=3, normalized=True, onesided=False)
+#     V_fft_hat = torch.stack([-V_fft[..., 1], V_fft[..., 0]], dim=-1)
+#     dV_dh = torch.irfft(V_fft_hat * mesh_h.unsqueeze(-1), signal_ndim=3, normalized=True, onesided=False)
+#     dV_dw = torch.irfft(V_fft_hat * mesh_w.unsqueeze(-1), signal_ndim=3, normalized=True, onesided=False)
+#     dV_dd = torch.irfft(V_fft_hat * mesh_d.unsqueeze(-1), signal_ndim=3, normalized=True, onesided=False)
+#     dV = torch.stack([dV_dh, dV_dw, dV_dd], dim=2)
+# 
+#     V_fft2 = torch.fft.fftn(x, dim=[-3, -2, -1], norm='ortho')
+#     V_fft2_hat = V_fft2.clone()
+#     V_fft2_hat.real = -V_fft2.imag
+#     V_fft2_hat.imag = V_fft2.real
+#     dV_dh2 = torch.fft.ifftn(V_fft2_hat * mesh_h, dim=[-3, -2, -1], norm='ortho').real
+#     dV_dw2 = torch.fft.ifftn(V_fft2_hat * mesh_w, dim=[-3, -2, -1], norm='ortho').real
+#     dV_dd2 = torch.fft.ifftn(V_fft2_hat * mesh_d, dim=[-3, -2, -1], norm='ortho').real
+#     dV2 = torch.stack([dV_dh2, dV_dw2, dV_dd2], dim=2)
+#     print(torch.allclose(dV, dV2))
+#     exit()
