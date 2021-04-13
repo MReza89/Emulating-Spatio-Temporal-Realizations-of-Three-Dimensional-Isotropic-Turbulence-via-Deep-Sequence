@@ -164,7 +164,6 @@ class Transformer(nn.Module):
         return mask
 
     def next(self, input, n):
-        print(n)
         x_ = input
         y = []
         for i in range(n):

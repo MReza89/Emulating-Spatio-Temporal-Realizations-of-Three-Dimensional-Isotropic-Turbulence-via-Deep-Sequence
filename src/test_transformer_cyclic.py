@@ -61,7 +61,7 @@ def runExperiment():
     test_logger.safe(False)
     _, _, _, _, train_logger = resume(model, cfg['model_tag'], load_tag='best')
     save_result = {'cfg': cfg, 'epoch': last_epoch, 'logger': {'train': train_logger, 'test': test_logger}}
-    save(save_result, './output/result/{}.pt'.format(cfg['model_tag']))
+    save(save_result, './output/result/{}_cyclic.pt'.format(cfg['model_tag']))
     return
 
 
@@ -69,16 +69,17 @@ def test(uvw_dataset, code_dataset, ae, model, metric, logger, epoch):
     with torch.no_grad():
         ae.train(False)
         model.train(False)
+        code = code_dataset[: cfg['seq_length'][0]].unsqueeze(0)
         for i in range(0, len(uvw_dataset) - (cfg['seq_length'][0] + cfg['seq_length'][1])):
+            logger.safe(True)
             uvw, duvw = [], []
             for j in range(i + cfg['seq_length'][0], i + cfg['seq_length'][0] + cfg['seq_length'][1]):
                 uvw.append(uvw_dataset[j]['uvw'])
                 duvw.append(uvw_dataset[j]['duvw'])
             uvw = torch.stack(uvw, dim=0)
             duvw = torch.stack(duvw, dim=0)
-            code = code_dataset[i: i + cfg['seq_length'][0]].unsqueeze(0)
             ncode = model.next(code.to(cfg['device']), cfg['seq_length'][1])
-            model.block.free_hidden()
+            code = ncode
             input = {'uvw': uvw, 'duvw': duvw, 'code': code}
             output = {'ncode': ncode}
             input = to_device(input, cfg['device'])
@@ -86,13 +87,14 @@ def test(uvw_dataset, code_dataset, ae, model, metric, logger, epoch):
             output['duvw'] = models.spectral_derivative_3d(output['uvw'])
             evaluation = metric.evaluate(metric.metric_name['test'], input, output)
             logger.append(evaluation, 'test', 1)
+            logger.safe(False)
         info = {'info': ['Model: {}'.format(cfg['model_tag']), 'Test Epoch: {}({:.0f}%)'.format(epoch, 100.)]}
         logger.append(info, 'test', mean=False)
         print(logger.write('test', metric.metric_name['test']))
         for j in range(output['uvw'].size(0)):
             vis_input = {'uvw': input['uvw'][j].unsqueeze(0), 'duvw': input['duvw'][j].unsqueeze(0)}
             vis_output = {'uvw': output['uvw'][j].unsqueeze(0), 'duvw': output['duvw'][j].unsqueeze(0)}
-            vis(vis_input, vis_output, './output/vis_' + cfg['model_tag'] + '/p_{}'.format(j))
+            vis(vis_input, vis_output, './output/vis_' + cfg['model_tag'] + '/cyclic_{}'.format(j))
     return
 
 

@@ -110,7 +110,6 @@ class ConvLSTM(nn.Module):
             x = self.classifier(x)
             x = x.topk(1, 1, True, True)[1][:, 0]
             y.append(x)
-        self.block.free_hidden()
         output = torch.cat(y, dim=1)
         return output
 

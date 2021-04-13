@@ -1,7 +1,7 @@
 ---
 # control
 control:
-  depth: '2'
+  depth: '1'
   code_hidden_size : 'chs-1'
   loss_mode: 'exact-physics'
   loss_commit: '0.1-0.0'
