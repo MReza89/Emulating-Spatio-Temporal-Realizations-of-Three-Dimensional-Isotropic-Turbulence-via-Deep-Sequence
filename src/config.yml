@@ -9,7 +9,8 @@ control:
 # data
 data_name: Turb
 # model
-model_name: convlstm
+model_name: transformer
+cyclic_train: 1
 # experiment
 num_workers: 0
 init_seed: 0

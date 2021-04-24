@@ -35,7 +35,8 @@ def main():
     for i in range(cfg['num_experiments']):
         cfg['ae_control_name'] = '_'.join([cfg['control'][k] for k in cfg['control'] if k not in ['seq_length']])
         ae_tag_list = [str(seeds[i]), cfg['data_name'], cfg['ae_name'], cfg['ae_control_name']]
-        model_tag_list = [str(seeds[i]), cfg['data_name'], cfg['model_name'], cfg['control_name']]
+        model_tag_list = [str(seeds[i]), cfg['data_name'], \
+                          cfg['model_name'] + '_cyclic' if cfg['cyclic_train']==1 else cfg['model_name'], cfg['control_name']]
         cfg['ae_tag'] = '_'.join([x for x in ae_tag_list if x])
         cfg['model_tag'] = '_'.join([x for x in model_tag_list if x])
         print('Experiment: {}'.format(cfg['model_tag']))
@@ -95,6 +96,8 @@ def train(dataset, model, optimizer, metric, logger, epoch):
     dataset = BatchDataset(dataset, cfg['seq_length'])
     start_time = time.time()
     for i, input in enumerate(dataset):
+        if cfg['cyclic_train'] == 1 and i != 0:
+            input['code'] = output['ncode']
         input_size = input['code'].size(0)
         input = to_device(input, cfg['device'])
         optimizer.zero_grad()
