@@ -31,7 +31,8 @@ def main():
     process_control()
     seeds = list(range(cfg['init_seed'], cfg['init_seed'] + cfg['num_experiments']))
     for i in range(cfg['num_experiments']):
-        cfg['ae_control_name'] = '_'.join([cfg['control'][k] for k in cfg['control'] if k not in ['seq_length']])
+        cfg['ae_control_name'] = '_'.join(
+            [cfg['control'][k] for k in cfg['control'] if k not in ['seq_length', 'cyclic']])
         ae_tag_list = [str(seeds[i]), cfg['data_name'], cfg['ae_name'], cfg['ae_control_name']]
         model_tag_list = [str(seeds[i]), cfg['data_name'], cfg['model_name'], cfg['control_name']]
         cfg['ae_tag'] = '_'.join([x for x in ae_tag_list if x])

@@ -543,7 +543,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
         plt.tight_layout()
         makedir_exist_ok(path)
         fig.savefig('{}/Model_Evluation_{}.{}'.format(path, cfg['model_tag'], cfg['fig_format']), dpi=300,
-                        bbox_inches='tight', fontsize=fontsize)
+                        bbox_inches='tight')
         plt.close()
         
     
@@ -588,8 +588,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
                 ax[i][2].legend(fontsize=legend_fontsize,frameon=False)            
         plt.tight_layout()
         makedir_exist_ok(path)
-        fig.savefig('{}/uvw_{}.{}'.format(path, cfg['model_tag'], cfg['fig_format']), dpi=300, bbox_inches='tight',
-                    fontsize=fontsize)
+        fig.savefig('{}/uvw_{}.{}'.format(path, cfg['model_tag'], cfg['fig_format']), dpi=300, bbox_inches='tight')
         plt.close()
         np.save(path+'/output_uvw.npy',output_uvw)
     
@@ -617,8 +616,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
                 ax[i][j].legend(fontsize=fontsize)
         plt.tight_layout()
         makedir_exist_ok(path)
-        fig.savefig('{}/vg_{}.{}'.format(path, cfg['model_tag'], cfg['fig_format']), dpi=300, bbox_inches='tight',
-                    fontsize=fontsize)
+        fig.savefig('{}/vg_{}.{}'.format(path, cfg['model_tag'], cfg['fig_format']), dpi=300, bbox_inches='tight')
         plt.close()
 
     Ng = input_uvw.shape[-1]
@@ -652,8 +650,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
         plt.tight_layout()
         makedir_exist_ok(path)
         fig.savefig('{}/EnergySpectrum_{}.{}'.format(path, cfg['model_tag'], cfg['fig_format']), dpi=300,
-                    bbox_inches='tight',
-                    fontsize=fontsize)
+                    bbox_inches='tight')
         plt.close()
 
     # Velocity Gradient Statistics
@@ -707,7 +704,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
         plt.tight_layout()
         makedir_exist_ok(path)
         fig.savefig('{}/U_V_W_Evaluation_summary_{}.{}'.format(path, cfg['model_tag'], cfg['fig_format']), dpi=300,
-                            bbox_inches='tight', fontsize=fontsize)
+                            bbox_inches='tight')
         plt.close()
             
          
@@ -760,8 +757,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
                 ax[2][i].legend(fontsize=fontsize)
             plt.tight_layout()
             fig.savefig('{}/{}_Summary_{}.{}'.format(path, Vel_comp, cfg['model_tag'], cfg['fig_format']), dpi=300,
-                        bbox_inches='tight',
-                        fontsize=fontsize)
+                        bbox_inches='tight')
 
             plt.close()
 
@@ -809,8 +805,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
         plt.tight_layout()
         makedir_exist_ok(path)
         fig.savefig('{}/RQ{}_{}.{}'.format(path, 'All', cfg['model_tag'], cfg['fig_format']), dpi=300,
-                    bbox_inches='tight',
-                    fontsize=fontsize)
+                    bbox_inches='tight')
         plt.close()
         
     
@@ -847,8 +842,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
             plt.tight_layout()
             makedir_exist_ok(path)
             fig.savefig('{}/VG{}_SummaryStatistics_{}.{}'.format(path, Scale, cfg['model_tag'], cfg['fig_format']), dpi=300,
-                        bbox_inches='tight',
-                        fontsize=fontsize)
+                        bbox_inches='tight')
             plt.close()
 
     label = [['dUdx', 'dUdy', 'dUdz'], ['dVdx', 'dVdy', 'dVdz'], ['dWdx', 'dWdy', 'dWdz']]
@@ -882,8 +876,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
 
             makedir_exist_ok(path)
             fig.savefig('{}/VG{}_PDF_{}.{}'.format(path, Scale, cfg['model_tag'], cfg['fig_format']), dpi=300,
-                        bbox_inches='tight',
-                        fontsize=fontsize)
+                        bbox_inches='tight')
             plt.close()
     if Plt_VG_filter_PDF_LongTransverse:
         xx = np.linspace(-5, 5, 1000)
@@ -956,8 +949,7 @@ def vis(input, output, path, model_evaluation = None, i_d_min=5, fontsize=10, nu
 
             makedir_exist_ok(path)
             fig.savefig('{}/VG{}_PDF_LongTrans_{}.{}'.format(path, Scale, cfg['model_tag'], cfg['fig_format']), dpi=300,
-                        bbox_inches='tight',
-                        fontsize=fontsize)
+                        bbox_inches='tight')
             plt.close()
             
     return
