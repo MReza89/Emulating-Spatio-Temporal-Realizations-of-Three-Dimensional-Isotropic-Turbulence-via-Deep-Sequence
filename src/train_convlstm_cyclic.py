@@ -7,9 +7,9 @@ import time
 import torch
 import torch.backends.cudnn as cudnn
 from config import cfg
-from data import fetch_dataset, make_data_loader
+from data import BatchDataset
 from metrics import Metric
-from utils import save, to_device, process_control, process_dataset, make_optimizer, make_scheduler, resume, collate
+from utils import save, load, to_device, process_control, process_dataset, make_optimizer, make_scheduler, resume
 from logger import Logger
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -25,14 +25,19 @@ if args['control_name']:
     cfg['control'] = {k: v for k, v in zip(cfg['control'].keys(), args['control_name'].split('_'))} \
         if args['control_name'] != 'None' else {}
 cfg['control_name'] = '_'.join(
-    [cfg['control'][k] for k in cfg['control'] if k not in ['seq_length', 'cyclic']]) if 'control' in cfg else ''
+    [cfg['control'][k] for k in cfg['control'] if cfg['control'][k]]) if 'control' in cfg else ''
+cfg['ae_name'] = 'vqvae'
 
 
 def main():
     process_control()
     seeds = list(range(cfg['init_seed'], cfg['init_seed'] + cfg['num_experiments']))
     for i in range(cfg['num_experiments']):
+        cfg['ae_control_name'] = '_'.join(
+            [cfg['control'][k] for k in cfg['control'] if k not in ['seq_length', 'cyclic']])
+        ae_tag_list = [str(seeds[i]), cfg['data_name'], cfg['ae_name'], cfg['ae_control_name']]
         model_tag_list = [str(seeds[i]), cfg['data_name'], cfg['model_name'], cfg['control_name']]
+        cfg['ae_tag'] = '_'.join([x for x in ae_tag_list if x])
         cfg['model_tag'] = '_'.join([x for x in model_tag_list if x])
         print('Experiment: {}'.format(cfg['model_tag']))
         runExperiment()
@@ -43,13 +48,16 @@ def runExperiment():
     seed = int(cfg['model_tag'].split('_')[0])
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
-    dataset = fetch_dataset(cfg['data_name'])
+    dataset = {}
+    dataset['train'] = load('./output/code/train_{}.pt'.format(cfg['ae_tag']))
+    dataset['test'] = load('./output/code/test_{}.pt'.format(cfg['ae_tag']))
     process_dataset(dataset)
-    data_loader = make_data_loader(dataset, cfg['model_name'])
+    ae = eval('models.{}().to(cfg["device"])'.format(cfg['ae_name']))
+    _, ae, _, _, _ = resume(ae, cfg['ae_tag'], load_tag='best')
     model = eval('models.{}().to(cfg["device"])'.format(cfg['model_name']))
     optimizer = make_optimizer(model, cfg['model_name'])
     scheduler = make_scheduler(optimizer, cfg['model_name'])
-    metric = Metric({'train': ['Loss', 'MSE'], 'test': ['Loss', 'MSE', 'D_MSE', 'Physics']})
+    metric = Metric({'train': ['Loss'], 'test': ['Loss', 'MSE']})
     if cfg['resume_mode'] == 1:
         last_epoch, model, optimizer, scheduler, logger = resume(model, cfg['model_tag'], optimizer, scheduler)
     else:
@@ -61,8 +69,8 @@ def runExperiment():
         model = torch.nn.DataParallel(model, device_ids=list(range(cfg['world_size'])))
     for epoch in range(last_epoch, cfg[cfg['model_name']]['num_epochs'] + 1):
         logger.safe(True)
-        train(data_loader['train'], model, optimizer, metric, logger, epoch)
-        test(data_loader['test'], model, metric, logger, epoch)
+        train(dataset['train'], model, optimizer, metric, logger, epoch)
+        test(dataset['test'], ae, model, metric, logger, epoch)
         if cfg[cfg['model_name']]['scheduler_name'] == 'ReduceLROnPlateau':
             scheduler.step(metrics=logger.mean['train/{}'.format(metric.pivot_name)])
         else:
@@ -83,12 +91,14 @@ def runExperiment():
     return
 
 
-def train(data_loader, model, optimizer, metric, logger, epoch):
+def train(dataset, model, optimizer, metric, logger, epoch):
     model.train(True)
+    dataset = BatchDataset(dataset, cfg['seq_length'], cfg['seq_length'][0])
     start_time = time.time()
-    for i, input in enumerate(data_loader):
-        input = collate(input)
-        input_size = input['uvw'].size(0)
+    for i, input in enumerate(dataset):
+        if i > 0:
+            input['code'] = output['ncode']
+        input_size = input['code'].size(0)
         input = to_device(input, cfg['device'])
         optimizer.zero_grad()
         output = model(input)
@@ -98,14 +108,14 @@ def train(data_loader, model, optimizer, metric, logger, epoch):
         optimizer.step()
         evaluation = metric.evaluate(metric.metric_name['train'], input, output)
         logger.append(evaluation, 'train', n=input_size)
-        if i % int((len(data_loader) * cfg['log_interval']) + 1) == 0:
+        if i % int((len(dataset) * cfg['log_interval']) + 1) == 0:
             batch_time = (time.time() - start_time) / (i + 1)
             lr = optimizer.param_groups[0]['lr']
-            epoch_finished_time = datetime.timedelta(seconds=round(batch_time * (len(data_loader) - i - 1)))
+            epoch_finished_time = datetime.timedelta(seconds=round(batch_time * (len(dataset) - i - 1)))
             exp_finished_time = epoch_finished_time + datetime.timedelta(
-                seconds=round((cfg[cfg['model_name']]['num_epochs'] - epoch) * batch_time * len(data_loader)))
+                seconds=round((cfg[cfg['model_name']]['num_epochs'] - epoch) * batch_time * len(dataset)))
             info = {'info': ['Model: {}'.format(cfg['model_tag']),
-                             'Train Epoch: {}({:.0f}%)'.format(epoch, 100. * i / len(data_loader)),
+                             'Train Epoch: {}({:.0f}%)'.format(epoch, 100. * i / len(dataset)),
                              'Learning rate: {:.6f}'.format(lr), 'Epoch Finished Time: {}'.format(epoch_finished_time),
                              'Experiment Finished Time: {}'.format(exp_finished_time)]}
             logger.append(info, 'train', mean=False)
@@ -113,14 +123,19 @@ def train(data_loader, model, optimizer, metric, logger, epoch):
     return
 
 
-def test(data_loader, model, metric, logger, epoch):
+def test(dataset, ae, model, metric, logger, epoch):
     with torch.no_grad():
         model.train(False)
-        for i, input in enumerate(data_loader):
-            input = collate(input)
-            input_size = input['uvw'].size(0)
+        ae.train(False)
+        dataset = BatchDataset(dataset, cfg['seq_length'], cfg['seq_length'][0])
+        for i, input in enumerate(dataset):
+            if i > 0:
+                input['code'] = output['ncode']
+            input_size = input['code'].size(0)
             input = to_device(input, cfg['device'])
             output = model(input)
+            input['uvw'] = ae.decode_code(input['ncode'].view(-1, *input['ncode'].size()[2:]))
+            output['uvw'] = ae.decode_code(output['ncode'].view(-1, *output['ncode'].size()[2:]))
             output['loss'] = output['loss'].mean() if cfg['world_size'] > 1 else output['loss']
             evaluation = metric.evaluate(metric.metric_name['test'], input, output)
             logger.append(evaluation, 'test', input_size)

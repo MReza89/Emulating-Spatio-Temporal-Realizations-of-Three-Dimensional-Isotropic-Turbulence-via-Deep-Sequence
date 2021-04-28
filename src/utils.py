@@ -112,6 +112,7 @@ def process_control():
     cfg['loss_commit'] = [float(x) for x in cfg['control']['loss_commit'].split('-')]
     cfg['seq_length'] = [int(x) for x in cfg['control']['seq_length'].split('-')] if 'seq_length' in cfg[
         'control'] else None
+    cfg['cyclic'] = bool(int(cfg['control']['cyclic'])) if 'seq_length' in cfg['control'] else None
     cfg['vqvae'] = {'depth': int(cfg['control']['depth']), 'hidden_size': 128, 'embedding_size': 64,
                     'num_embedding': 512, 'num_res_block': 2, 'res_size': 32, 'vq_commit': 0.25}
     cfg['transformer'] = {'embedding_size': 64, 'hidden_size': 128, 'num_heads': 2, 'dropout': 0.2, 'num_layers': 2}

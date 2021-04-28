@@ -33,8 +33,7 @@ def main():
     for i in range(cfg['num_experiments']):
         cfg['ae_control_name'] = '_'.join([cfg['control'][k] for k in cfg['control'] if k not in ['seq_length']])
         ae_tag_list = [str(seeds[i]), cfg['data_name'], cfg['ae_name'], cfg['ae_control_name']]
-        model_tag_list = [str(seeds[i]), cfg['data_name'], \
-                          cfg['model_name'] + '_cyclic' if cfg['cyclic_train']==1 else cfg['model_name'], cfg['control_name']]
+        model_tag_list = [str(seeds[i]), cfg['data_name'], cfg['model_name'], cfg['control_name']]
         cfg['ae_tag'] = '_'.join([x for x in ae_tag_list if x])
         cfg['model_tag'] = '_'.join([x for x in model_tag_list if x])
         print('Experiment: {}'.format(cfg['model_tag']))
@@ -92,7 +91,7 @@ def test(uvw_dataset, code_dataset, ae, model, metric, logger, epoch):
             for j in range(output['uvw'].size(0)):
                 vis_input = {'uvw': input['uvw'][j].unsqueeze(0), 'duvw': input['duvw'][j].unsqueeze(0)}
                 vis_output = {'uvw': output['uvw'][j].unsqueeze(0), 'duvw': output['duvw'][j].unsqueeze(0)}
-                vis(vis_input, vis_output, './output/vis_' + cfg['model_tag'] + '/cyclic_{}_{}'.format(i,j))
+                vis(vis_input, vis_output, './output/vis_' + cfg['model_tag'] + '/{}_{}'.format(i, j))
         info = {'info': ['Model: {}'.format(cfg['model_tag']), 'Test Epoch: {}({:.0f}%)'.format(epoch, 100.)]}
         logger.append(info, 'test', mean=False)
         print(logger.write('test', metric.metric_name['test']))

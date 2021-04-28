@@ -20,7 +20,8 @@ if args['control_name']:
     cfg['control'] = {k: v for k, v in zip(cfg['control'].keys(), args['control_name'].split('_'))} \
         if args['control_name'] != 'None' else {}
 cfg['control_name'] = '_'.join(
-    [cfg['control'][k] for k in cfg['control'] if k not in ['seq_length']]) if 'control' in cfg else ''
+    [cfg['control'][k] for k in cfg['control'] if k not in ['seq_length', 'cyclic']]) if 'control' in cfg else ''
+
 
 def main():
     process_control()
@@ -59,7 +60,8 @@ def encode(data_loader, model):
             input = to_device(input, cfg['device'])
             _, _, code_i = model.encode(input['uvw'])
             code.append(code_i.cpu())
-            if i==0: print("code_i.size() = " , code_i.size())
+            if i == 0:
+                print('Code size: {}'.format(code_i.size()))
         code = torch.cat(code, dim=0)
     return code
 

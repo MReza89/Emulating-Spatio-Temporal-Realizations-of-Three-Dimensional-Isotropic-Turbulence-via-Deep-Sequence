@@ -121,7 +121,6 @@ class ConvLSTM(nn.Module):
         x = x.view(-1, S, U, V, W)
         x = self.embedding(x)
         x = self.block(x)
-        self.block.free_hidden()
         x = x[:, -input['ncode'].size(1):]
         x = x.view(N, C, input['ncode'].size(1), U, V, W, -1)
         x = x.permute(0, 2, 1, 3, 4, 5, 6)

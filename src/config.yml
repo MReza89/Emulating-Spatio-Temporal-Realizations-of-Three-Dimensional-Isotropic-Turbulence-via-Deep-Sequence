@@ -6,11 +6,11 @@ control:
   loss_mode: 'exact-physics'
   loss_commit: '0.1-0.0'
   seq_length: '3-3'
+  cyclic: '1'
 # data
 data_name: Turb
 # model
-model_name: transformer
-cyclic_train: 1
+model_name: convlstm
 # experiment
 num_workers: 0
 init_seed: 0

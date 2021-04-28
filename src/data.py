@@ -42,12 +42,12 @@ def make_data_loader(dataset, tag, shuffle=None):
 
 
 class BatchDataset(Dataset):
-    def __init__(self, dataset, seq_length):
+    def __init__(self, dataset, seq_length, step=1):
         super().__init__()
         self.dataset = dataset
         self.seq_length = seq_length
         self.S = dataset.size(1)
-        self.idx = list(range(0, self.S - (self.seq_length[0] + self.seq_length[1])))
+        self.idx = list(range(0, self.S - (self.seq_length[0] + self.seq_length[1]), step))
 
     def __len__(self):
         return len(self.idx)

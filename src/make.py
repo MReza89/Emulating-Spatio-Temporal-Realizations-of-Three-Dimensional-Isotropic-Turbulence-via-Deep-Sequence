@@ -36,28 +36,44 @@ def main():
     init_seed = args['init_seed']
     num_experiments = args['num_experiments']
     resume_mode = args['resume_mode']
-    model = args['model']
-    file = args['file'] if args['file'] is not None else model
+    file = args['file']
     gpu_ids = [','.join(str(i) for i in list(range(x, x + world_size))) for x in list(range(0, num_gpus, world_size))]
-    script_name = [['{}.py'.format(run)]] if run in ['encode'] else [['{}_{}.py'.format(run, file)]]
     init_seeds = [list(range(init_seed, init_seed + num_experiments, experiment_step))]
     world_size = [[world_size]]
     num_experiments = [[experiment_step]]
     resume_mode = [[resume_mode]]
-    if model == 'vqvae':
-        filename = '{}_{}'.format(run, model)
-        model_names = [[model]]
-        data_names = [['Turb']]
-        control_name = [[['2', '3'], ['exact-physics'], ['0-0', '0.1-0', '0-0.0001', '0.1-0.0001']]]
+    filename = '{}_{}'.format(run, file)
+    data_names = [['Turb']]
+    if file == 'vqvae':
+        script_name = [['{}_vqvae.py'.format(run)]]
+        model_names = [['vqvae']]
+        control_name = [[['1', '2', '3'], ['chs-1'], ['exact-physics'], ['0.1-0.0']]]
         controls = make_controls(script_name, data_names, model_names, init_seeds, world_size, num_experiments,
                                  resume_mode, control_name)
-    elif model in ['transformer', 'convlstm']:
-        filename = '{}_{}'.format(run, model)
-        model_names = [[model]]
-        data_names = [['Turb']]
-        control_name = [[['2', '3'], ['exact-physics'], ['0-0', '0.1-0', '0-0.0001', '0.1-0.0001'], ['4-4']]]
-        controls = make_controls(script_name, data_names, model_names, init_seeds, world_size, num_experiments,
-                                 resume_mode, control_name)
+    elif file == 'teacher':
+        script_name = [['{}_convlstm.py'.format(run)]]
+        model_names = [['convlstm']]
+        control_name = [[['1', '2', '3'], ['chs-1'], ['exact-physics'], ['0.1-0.0'], ['3-3'], ['0']]]
+        convlstm_controls = make_controls(script_name, data_names, model_names, init_seeds, world_size, num_experiments,
+                                          resume_mode, control_name)
+        script_name = [['{}_transformer.py'.format(run)]]
+        model_names = [['transformer']]
+        control_name = [[['1', '2', '3'], ['chs-1'], ['exact-physics'], ['0.1-0.0'], ['3-3'], ['0']]]
+        transformer_controls = make_controls(script_name, data_names, model_names, init_seeds, world_size,
+                                             num_experiments, resume_mode, control_name)
+        controls = convlstm_controls + transformer_controls
+    elif file == 'cyclic':
+        script_name = [['{}_convlstm_cyclic.py'.format(run)]]
+        model_names = [['convlstm']]
+        control_name = [[['1', '2', '3'], ['chs-1'], ['exact-physics'], ['0.1-0.0'], ['3-3'], ['1']]]
+        convlstm_controls = make_controls(script_name, data_names, model_names, init_seeds, world_size, num_experiments,
+                                          resume_mode, control_name)
+        script_name = [['{}_transformer_cyclic.py'.format(run)]]
+        model_names = [['transformer']]
+        control_name = [[['1', '2', '3'], ['chs-1'], ['exact-physics'], ['0.1-0.0'], ['3-3'], ['1']]]
+        transformer_controls = make_controls(script_name, data_names, model_names, init_seeds, world_size,
+                                             num_experiments, resume_mode, control_name)
+        controls = convlstm_controls + transformer_controls
     else:
         raise ValueError('Not valid model')
     s = '#!/bin/bash\n'
