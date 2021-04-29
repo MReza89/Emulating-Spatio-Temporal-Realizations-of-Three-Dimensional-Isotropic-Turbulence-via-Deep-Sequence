@@ -80,10 +80,9 @@ def test(uvw_dataset, code_dataset, ae, model, metric, logger, epoch):
             uvw = torch.stack(uvw, dim=0)
             duvw = torch.stack(duvw, dim=0)
             ncode = model.next(code.to(cfg['device']), cfg['seq_length'][1])
-            code = ncode
-            model.block.free_hidden()
             input = {'uvw': uvw, 'duvw': duvw, 'code': code}
             output = {'ncode': ncode}
+            code = ncode
             input = to_device(input, cfg['device'])
             output['uvw'] = ae.decode_code(output['ncode'].view(-1, *output['ncode'].size()[2:]))
             output['duvw'] = models.spectral_derivative_3d(output['uvw'])
@@ -97,7 +96,6 @@ def test(uvw_dataset, code_dataset, ae, model, metric, logger, epoch):
         info = {'info': ['Model: {}'.format(cfg['model_tag']), 'Test Epoch: {}({:.0f}%)'.format(epoch, 100.)]}
         logger.append(info, 'test', mean=False)
         print(logger.write('test', metric.metric_name['test']))
-
     return
 
 
